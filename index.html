@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jukebox Titus</title>
+
+<style>
+body {
+  margin: 0;
+  background: #0b0b0b;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  margin: 20px;
+  font-weight: normal;
+}
+
+.player {
+  width: 90%;
+  max-width: 900px;
+  background: #111;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 0 30px rgba(255,255,255,0.1);
+}
+
+.now-playing {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 15px 0;
+}
+
+button {
+  background: #222;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #444;
+}
+
+.playlist {
+  margin-top: 20px;
+}
+
+.track {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+}
+
+.track:hover {
+  background: #222;
+}
+
+.active {
+  background: #333;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎧 Jukebox – Titus</h1>
+
+<div class="player">
+  <div class="now-playing" id="nowPlaying">Sélectionne une chanson</div>
+
+  <audio id="audio" controls style="width:100%"></audio>
+
+  <div class="controls">
+    <button onclick="prevTrack()">⏮</button>
+    <button onclick="playPause()">⏯</button>
+    <button onclick="nextTrack()">⏭</button>
+  </div>
+
+  <div class="playlist" id="playlist"></div>
+</div>
+
+<script>
+const tracks = [
+  { title: "Fallait pas", file: "audio/fallait-pas.mp3" },
+  { title: "Ayo Praslin", file: "audio/ayo-praslin.mp3" },
+  { title: "Fin de paradoxe", file: "audio/fin-de-paradoxe.mp3" },
+  { title: "L’important, c’est d’être deux", file: "audio/important-detre-deux.mp3" },
+  { title: "L’important, c’est d’être deux (version alternative)", file: "audio/important-detre-deux-v2.mp3" }
+];
+
+let current = 0;
+const audio = document.getElementById("audio");
+const playlistDiv = document.getElementById("playlist");
+const nowPlaying = document.getElementById("nowPlaying");
+
+function loadTrack(index) {
+  current = index;
+  audio.src = tracks[index].file;
+  nowPlaying.textContent = tracks[index].title;
+  updateActive();
+}
+
+function playPause() {
+  if (audio.paused) audio.play();
+  else audio.pause();
+}
+
+function nextTrack() {
+  current = (current + 1) % tracks.length;
+  loadTrack(current);
+  audio.play();
+}
+
+function prevTrack() {
+  current = (current - 1 + tracks.length) % tracks.length;
+  loadTrack(current);
+  audio.play();
+}
+
+function updateActive() {
+  const items = document.querySelectorAll(".track");
+  items.forEach((el, i) => {
+    el.classList.toggle("active", i === current);
+  });
+}
+
+tracks.forEach((track, index) => {
+  const div = document.createElement("div");
+  div.className = "track";
+  div.textContent = track.title;
+  div.onclick = () => {
+    loadTrack(index);
+    audio.play();
+  };
+  playlistDiv.appendChild(div);
+});
+
+audio.addEventListener("ended", nextTrack);
+
+// Load first track
+loadTrack(0);
+</script>
+
+</body>
+</html>
