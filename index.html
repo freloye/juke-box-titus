@@ -484,30 +484,40 @@
     }
 
     function readEmbeddedArtwork(track){
-      return new Promise((resolve) => {
-        if(artworkCache.has(track.file)) {
-          resolve(artworkCache.get(track.file));
-          return;
-        }
-        if(!window.jsmediatags){
+  return new Promise((resolve) => {
+
+    window.jsmediatags.read(track.file, {
+      onSuccess: function(tag) {
+
+        const picture = tag.tags.picture;
+
+        if (picture) {
+          const base64String = picture.data
+            .map(byte => String.fromCharCode(byte))
+            .join('');
+
+          const imageUrl = "data:" + picture.format + ";base64," + btoa(base64String);
+
+          artworkCache.set(track.file, imageUrl);
+
+          // 👉 MAJ DIRECTE (important)
+          if (tracks[currentIndex].file === track.file) {
+            mainCoverEl.src = imageUrl;
+          }
+
+          resolve(imageUrl);
+        } else {
           resolve(track.cover);
-          return;
         }
-        window.jsmediatags.read(track.file, {
-          onSuccess: (tag) => {
-            const picture = tag.tags.picture;
-            const dataUrl = pictureToDataUrl(picture);
-            if(dataUrl){
-              artworkCache.set(track.file, dataUrl);
-              resolve(dataUrl);
-            }else{
-              resolve(track.cover);
-            }
-          },
-          onError: () => resolve(track.cover)
-        });
-      });
-    }
+      },
+
+      onError: function() {
+        resolve(track.cover);
+      }
+    });
+
+  });
+}
 
     async function loadTrack(index, autoplay = false){
       currentIndex = index;
@@ -517,8 +527,8 @@
       currentTimeEl.textContent = "0:00";
       durationEl.textContent = "0:00";
       statusBadge.textContent = "Titre chargé";
-      await readEmbeddedArtwork(track);
-      updateDisplay(track);
+     updateDisplay(track);
+readEmbeddedArtwork(track);
       if(autoplay){
         audio.play().catch(() => statusBadge.textContent = "Clique sur lecture");
       }
