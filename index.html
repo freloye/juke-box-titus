@@ -95,13 +95,52 @@ button:hover {
 
 <script>
 const tracks = [
-  { title: "Fallait pas", file: "audio/fallait-pas.mp3" },
-  { title: "Ayo Praslin", file: "audio/ayo-praslin.mp3" },
-  { title: "Fin de paradoxe", file: "audio/fin-de-paradoxe.mp3" },
-  { title: "L’important, c’est d’être deux", file: "audio/important-detre-deux.mp3" },
-  { title: "quand j'ai tant à perdre", file: "audio/quand-jai-tant-a-perdre.mp3" }
+  {
+    title: "Fallait pas",
+    artist: "Titus",
+    album: "Les créations de Titus",
+    year: "2026",
+    tag: "Chanson",
+    cover: "pochette.png",
+    file: "fallait-pas.mp3"
+  },
+  {
+    title: "Ayo Praslin",
+    artist: "Titus",
+    album: "Les créations de Titus",
+    year: "2026",
+    tag: "Voyage",
+    cover: "pochette.png",
+    file: "ayo-praslin.mp3"
+  },
+  {
+    title: "Fin de paradoxe",
+    artist: "Titus",
+    album: "Les créations de Titus",
+    year: "2026",
+    tag: "Poétique",
+    cover: "pochette.png",
+    file: "fin-de-paradoxe.mp3"
+  },
+  {
+    title: "L’important, c’est d’être deux",
+    artist: "Titus",
+    album: "Les créations de Titus",
+    year: "2026",
+    tag: "Amour",
+    cover: "pochette.png",
+    file: "important-etre-2.mp3"
+  },
+  {
+    title: "Quand j’ai tant à perdre",
+    artist: "Titus",
+    album: "Les créations de Titus",
+    year: "2026",
+    tag: "Intime",
+    cover: "pochette.png",
+    file: "quand-jai-tant-a-perdre.mp3"
+  }
 ];
-
 let current = 0;
 const audio = document.getElementById("audio");
 const playlistDiv = document.getElementById("playlist");
