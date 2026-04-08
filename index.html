@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jukebox Titus</title>
-  <meta name="description" content="Jukebox Titus lisible, tactile et adapté au téléphone." />
+  <title>Jukebox Titus – Auto</title>
+  <meta name="description" content="Jukebox Titus auto : détection automatique des MP3 et des covers depuis le dépôt GitHub." />
   <style>
     :root{
       --bg:#0a0d14; --bg2:#141b2a; --panel:rgba(18,24,37,.92); --line:rgba(255,255,255,.10);
@@ -135,12 +136,12 @@
         <div class="brand">
           <small>Les créations de Titus</small>
           <h1>Jukebox Titus</h1>
-          <div class="sub">Version lisible sur téléphone, avec une seule platine claire et fallback automatique des pochettes</div>
+          <div class="sub">Version auto : détection des MP3 et covers directement dans le dépôt GitHub</div>
         </div>
         <div class="badges">
-          <div class="badge primary" id="statusBadge">Prêt à lire</div>
+          <div class="badge primary" id="statusBadge">Chargement…</div>
           <div class="badge" id="countBadge">0 titre</div>
-          <div class="badge" id="diagBadge">Fallback actif</div>
+          <div class="badge" id="diagBadge">Mode auto</div>
         </div>
       </div>
 
@@ -197,7 +198,7 @@
         <div class="grid-head">
           <div>
             <h2>Bibliothèque</h2>
-            <div class="sub">Tape sur une pochette pour lancer le morceau</div>
+            <div class="sub">Les morceaux apparaissent automatiquement si tu ajoutes le MP3 et sa cover</div>
           </div>
         </div>
         <div class="grid" id="grid"></div>
@@ -209,7 +210,11 @@
   <audio id="audio"></audio>
 
   <script>
+    const OWNER = "freloye";
+    const REPO = "juke-box-titus";
+    const BRANCH = "main";
     const FALLBACK_COVER = "pochette.png";
+    const API_ROOT = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents";
 
     const audio = document.getElementById('audio');
     const grid = document.getElementById('grid');
@@ -237,34 +242,73 @@
     const arm = document.getElementById('arm');
     const searchInput = document.getElementById('searchInput');
 
-    const COVER_MAP = {
-      "ayo-praslin.mp3": "covers/ayo-praslin-cover.jpg",
-      "fallait-pas.mp3": "covers/fallait-pas-cover.jpg",
-      "fin-de-paradoxe.mp3": "covers/fin-de-paradoxe-cover.jpg",
-      "important-etre-2.mp3": "covers/important-etre-2-cover.jpg",
-      "quand-jai-tant-a-perdre.mp3": "covers/quand-jai-tant-a-perdre.jpeg"
-    };
-
-    let tracks = [
-      { title: "Ayo Praslin", artist: "Titus", album: "Les créations de Titus", tag: "Créations", file: "ayo-praslin.mp3" },
-      { title: "Fallait pas", artist: "Titus", album: "Les créations de Titus", tag: "Créations", file: "fallait-pas.mp3" },
-      { title: "Fin de paradoxe", artist: "Titus", album: "Les créations de Titus", tag: "Créations", file: "fin-de-paradoxe.mp3" },
-      { title: "L’important, c’est d’être deux", artist: "Titus", album: "Les créations de Titus", tag: "Créations", file: "important-etre-2.mp3" },
-      { title: "Quand j’ai tant à perdre", artist: "Titus", album: "Les créations de Titus", tag: "Créations", file: "quand-jai-tant-a-perdre.mp3" }
-    ].map(track => ({
-      title: track.title,
-      artist: track.artist,
-      album: track.album,
-      tag: track.tag,
-      file: track.file,
-      cover: COVER_MAP[track.file] || FALLBACK_COVER,
-      fallback: FALLBACK_COVER
-    }));
-
-    let filteredTracks = tracks.slice();
+    let tracks = [];
+    let filteredTracks = [];
     let currentIndex = 0;
     let shuffleMode = false;
     let repeatMode = true;
+
+    function normalizeBase(name){
+      return name
+        .toLowerCase()
+        .replace(/\.[^.]+$/,'')
+        .replace(/-cover$/,'')
+        .replace(/[ _]+/g,'-')
+        .replace(/['’]/g,'')
+        .replace(/[^a-z0-9-]+/g,'')
+        .replace(/-+/g,'-')
+        .replace(/^-|-$/g,'');
+    }
+
+    function titleFromBase(base){
+      const map = {
+        "important-etre-2":"L’important, c’est d’être deux",
+        "jai-vomis-lencre":"J’ai vomis l’encre",
+        "je-veux-de-la-retraite":"Je veux de la retraite",
+        "nath-rock-thierry":"Nath rock thierry",
+        "nath-voulait-danser-le-rock-avec-thierry":"Nath voulait danser le rock avec Thierry",
+        "on-peut-saimer-sans-etre-2":"On peut s’aimer sans être deux",
+        "quand-jai-tant-a-perdre":"Quand j’ai tant à perdre",
+        "lesablebrulesousnospieds":"Le sable brûle sous nos pieds"
+      };
+      if(map[base]) return map[base];
+      const spaced = base.replace(/-/g,' ');
+      return spaced.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+    }
+
+    async function fetchJson(url){
+      const res = await fetch(url);
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return await res.json();
+    }
+
+    async function loadRepoData(){
+      const rootFiles = await fetchJson(API_ROOT + "?ref=" + BRANCH);
+      const coverFiles = await fetchJson(API_ROOT + "/covers?ref=" + BRANCH);
+
+      const mp3s = rootFiles.filter(function(f){ return f.type === "file" && /\.mp3$/i.test(f.name); });
+      const covers = coverFiles.filter(function(f){ return f.type === "file" && /\.(jpg|jpeg|png|webp)$/i.test(f.name); });
+
+      const coverMap = new Map();
+      covers.forEach(function(f){
+        coverMap.set(normalizeBase(f.name), "covers/" + f.name);
+      });
+
+      tracks = mp3s.map(function(f){
+        const base = normalizeBase(f.name);
+        return {
+          title: titleFromBase(base),
+          artist: "Titus",
+          album: "Les créations de Titus",
+          tag: "Créations",
+          file: f.name,
+          cover: coverMap.get(base) || FALLBACK_COVER,
+          fallback: FALLBACK_COVER
+        };
+      }).sort(function(a,b){ return a.title.localeCompare(b.title, 'fr'); });
+
+      filteredTracks = tracks.slice();
+    }
 
     function formatTime(seconds){
       if(!isFinite(seconds)) return '0:00';
@@ -295,7 +339,7 @@
       metaAlbumEl.textContent = track.album;
       metaTagEl.textContent = track.tag || 'Créations';
       safeSetImage(labelCoverEl, track.cover, track.fallback);
-      diagBadge.textContent = track.cover === FALLBACK_COVER ? 'Jaquette par défaut' : 'Cover dédiée';
+      diagBadge.textContent = track.cover === FALLBACK_COVER ? 'Cover manquante' : 'Cover auto';
       renderGrid();
     }
 
@@ -356,9 +400,7 @@
       if(shuffleMode){
         let next = currentIndex;
         if(tracks.length > 1){
-          while(next === currentIndex){
-            next = Math.floor(Math.random() * tracks.length);
-          }
+          while(next === currentIndex){ next = Math.floor(Math.random() * tracks.length); }
         }
         loadTrack(next, true);
         return;
@@ -380,10 +422,7 @@
     }
 
     function playPrev(){
-      if(audio.currentTime > 3){
-        audio.currentTime = 0;
-        return;
-      }
+      if(audio.currentTime > 3){ audio.currentTime = 0; return; }
       const idx = getFilteredCurrentIndex();
       if(idx > 0){
         const prevTrack = filteredTracks[idx - 1];
@@ -450,16 +489,26 @@
       renderGrid();
     });
 
-    function init(){
-      if(tracks.length === 0){
-        songTitleEl.textContent = 'Aucun titre';
-        statusBadge.textContent = 'Aucun morceau déclaré';
+    async function init(){
+      try{
+        await loadRepoData();
+        if(tracks.length === 0){
+          songTitleEl.textContent = 'Aucun titre';
+          statusBadge.textContent = 'Aucun mp3 détecté';
+          renderGrid();
+          return;
+        }
+        audio.volume = 0.85;
+        statusBadge.textContent = 'Bibliothèque détectée';
+        loadTrack(0, false);
         renderGrid();
-        return;
+      } catch (e){
+        songTitleEl.textContent = 'Erreur de chargement';
+        statusBadge.textContent = 'API GitHub indisponible';
+        diagBadge.textContent = 'Mode auto en échec';
+        emptyState.style.display = 'block';
+        emptyState.textContent = 'Impossible de lire automatiquement le dépôt.';
       }
-      audio.volume = 0.85;
-      loadTrack(0, false);
-      renderGrid();
     }
 
     init();
