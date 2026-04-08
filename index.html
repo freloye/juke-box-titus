@@ -1,82 +1,331 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    Jukebox Titus — version commentée
+    ---------------------------------
+    BUT :
+    - t'aider à modifier le fichier seul
+    - te montrer où ajouter un morceau
+    - te montrer où corriger une cover
+    - te montrer comment fonctionne le fallback (pochette par défaut)
+
+    CONSEIL :
+    - garde ce fichier comme "version pédagogique"
+    - quand tout fonctionne, tu pourras alléger les commentaires
+  -->
+
   <title>Jukebox Titus</title>
-  <meta name="description" content="Jukebox Titus lisible, tactile, avec alerte cover manquante." />
+  <meta name="description" content="Jukebox Titus lisible, tactile, avec alertes cover manquante et commentaires d'aide." />
+
   <style>
+    /* =========================
+       1) COULEURS ET BASE VISUELLE
+       ========================= */
     :root{
-      --bg:#0a0d14; --bg2:#141b2a; --panel:rgba(18,24,37,.92); --line:rgba(255,255,255,.10);
-      --text:#f3f5fb; --muted:#b8c0d5; --gold:#ffd36d; --rose:#ff7a8a; --green:#8ff0a4; --warn:#ffd36d;
+      --bg:#0a0d14;
+      --bg2:#141b2a;
+      --panel:rgba(18,24,37,.92);
+      --line:rgba(255,255,255,.10);
+      --text:#f3f5fb;
+      --muted:#b8c0d5;
+      --gold:#ffd36d;
+      --rose:#ff7a8a;
+      --green:#8ff0a4;
+      --warn:#ffd36d;
       --shadow:0 18px 50px rgba(0,0,0,.38);
     }
+
     *{box-sizing:border-box}
+
     html,body{
-      margin:0;padding:0;min-height:100%;font-family:Arial, Helvetica, sans-serif;color:var(--text);
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:Arial, Helvetica, sans-serif;
+      color:var(--text);
       background:
         radial-gradient(circle at 20% 10%, rgba(255,122,138,.12), transparent 18%),
         radial-gradient(circle at 80% 8%, rgba(255,211,109,.10), transparent 18%),
         linear-gradient(180deg, var(--bg2), var(--bg));
     }
+
     body{overflow-x:hidden}
-    .shell{width:min(100vw,100%);padding:10px;display:grid;gap:12px}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
-    .topbar{padding:18px 16px 10px;display:flex;flex-direction:column;gap:10px}
-    .brand small{display:block;color:var(--gold);text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:bold;margin-bottom:8px}
-    .brand h1{margin:0;font-size:clamp(30px,8vw,56px);line-height:1;font-weight:900}
-    .brand .sub{color:var(--muted);font-size:14px;margin-top:6px}
-    .badges{display:flex;flex-wrap:wrap;gap:8px}
-    .badge{border-radius:999px;padding:9px 12px;font-size:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:var(--muted)}
-    .badge.primary{color:#ffe8ad;border-color:rgba(255,211,109,.26);background:rgba(255,211,109,.08)}
 
-    .featured{padding:14px 16px 18px;display:grid;grid-template-columns:1fr;gap:18px}
-    .player{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
+    .shell{
+      width:min(100vw,100%);
+      padding:10px;
+      display:grid;
+      gap:12px;
+    }
 
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .topbar{
+      padding:18px 16px 10px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .brand small{
+      display:block;
+      color:var(--gold);
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      font-size:11px;
+      font-weight:bold;
+      margin-bottom:8px;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:clamp(30px,8vw,56px);
+      line-height:1;
+      font-weight:900;
+    }
+
+    .brand .sub{
+      color:var(--muted);
+      font-size:14px;
+      margin-top:6px;
+    }
+
+    .badges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+
+    .badge{
+      border-radius:999px;
+      padding:9px 12px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      color:var(--muted);
+    }
+
+    .badge.primary{
+      color:#ffe8ad;
+      border-color:rgba(255,211,109,.26);
+      background:rgba(255,211,109,.08);
+    }
+
+    .featured{
+      padding:14px 16px 18px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:18px;
+    }
+
+    .player{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    /* =========================
+       2) PLATINE UNIQUE
+       =========================
+       Une seule platine visible pour éviter la confusion sur téléphone.
+    */
     .turntable{
-      position:relative;width:min(100%,360px);aspect-ratio:1/1;margin:0 auto;border-radius:24px;
+      position:relative;
+      width:min(100%,360px);
+      aspect-ratio:1/1;
+      margin:0 auto;
+      border-radius:24px;
       border:1px solid rgba(255,255,255,.12);
       background:
         linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)),
         linear-gradient(180deg, #242d42, #181f2f 58%, #131927);
       box-shadow:inset 0 0 36px rgba(255,255,255,.04), 0 20px 40px rgba(0,0,0,.30);
-      overflow:hidden
+      overflow:hidden;
     }
-    .turntable::before{content:"";position:absolute;inset:12px;border-radius:18px;border:1px solid rgba(255,255,255,.05)}
-    .deck-glow{position:absolute;inset:10% 10% auto 10%;height:16%;border-radius:999px;background:radial-gradient(circle at center, rgba(255,211,109,.18), transparent 60%);filter:blur(12px)}
-    .vinyl-wrap{position:absolute;left:50%;top:52%;width:64%;aspect-ratio:1/1;transform:translate(-50%,-50%);display:grid;place-items:center}
-    .vinyl-backdrop{position:absolute;inset:-8%;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,.20), rgba(255,255,255,.08) 34%, rgba(255,211,109,.05) 55%, transparent 72%);filter:blur(10px)}
+
+    .turntable::before{
+      content:"";
+      position:absolute;
+      inset:12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.05);
+    }
+
+    .deck-glow{
+      position:absolute;
+      inset:10% 10% auto 10%;
+      height:16%;
+      border-radius:999px;
+      background:radial-gradient(circle at center, rgba(255,211,109,.18), transparent 60%);
+      filter:blur(12px);
+    }
+
+    .vinyl-wrap{
+      position:absolute;
+      left:50%;
+      top:52%;
+      width:64%;
+      aspect-ratio:1/1;
+      transform:translate(-50%,-50%);
+      display:grid;
+      place-items:center;
+    }
+
+    .vinyl-backdrop{
+      position:absolute;
+      inset:-8%;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(255,255,255,.20), rgba(255,255,255,.08) 34%, rgba(255,211,109,.05) 55%, transparent 72%);
+      filter:blur(10px);
+    }
+
     .vinyl{
-      position:relative;width:100%;aspect-ratio:1/1;border-radius:50%;
+      position:relative;
+      width:100%;
+      aspect-ratio:1/1;
+      border-radius:50%;
       background:radial-gradient(circle at center, #1b1b1b 0 10%, #080808 10% 13%, #2c2c2c 13% 17%, #0b0b0b 17% 100%);
       box-shadow:inset 0 0 0 2px rgba(255,255,255,.08), inset 0 0 40px rgba(255,255,255,.05), 0 20px 34px rgba(0,0,0,.42);
-      animation:spin 10s linear infinite paused
+      animation:spin 10s linear infinite paused;
     }
+
     .vinyl.playing{animation-play-state:running}
-    .vinyl::before{content:"";position:absolute;inset:7%;border-radius:50%;background:repeating-radial-gradient(circle, rgba(255,255,255,.10) 0 2px, rgba(255,255,255,0) 2px 8px);opacity:.24}
-    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-    .label{position:absolute;inset:31%;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.12);background:#20242f;box-shadow:inset 0 0 24px rgba(255,255,255,.08)}
-    .label img{width:100%;height:100%;object-fit:cover;display:block}
-    .spindle{position:absolute;width:18px;height:18px;border-radius:50%;background:linear-gradient(180deg,#ddd,#999);z-index:2;box-shadow:0 0 10px rgba(255,255,255,.22)}
 
+    .vinyl::before{
+      content:"";
+      position:absolute;
+      inset:7%;
+      border-radius:50%;
+      background:repeating-radial-gradient(circle, rgba(255,255,255,.10) 0 2px, rgba(255,255,255,0) 2px 8px);
+      opacity:.24;
+    }
+
+    @keyframes spin{
+      from{transform:rotate(0)}
+      to{transform:rotate(360deg)}
+    }
+
+    .label{
+      position:absolute;
+      inset:31%;
+      border-radius:50%;
+      overflow:hidden;
+      border:3px solid rgba(255,255,255,.12);
+      background:#20242f;
+      box-shadow:inset 0 0 24px rgba(255,255,255,.08);
+    }
+
+    .label img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .spindle{
+      position:absolute;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:linear-gradient(180deg,#ddd,#999);
+      z-index:2;
+      box-shadow:0 0 10px rgba(255,255,255,.22);
+    }
+
+    /* Bras de lecture volontairement plus lisible */
     .arm-base{
-      position:absolute;right:14%;top:18%;width:26px;height:26px;border-radius:50%;
-      background:linear-gradient(180deg,#aeb8c9,#616d82);box-shadow:0 3px 10px rgba(0,0,0,.35);z-index:4
+      position:absolute;
+      right:14%;
+      top:18%;
+      width:26px;
+      height:26px;
+      border-radius:50%;
+      background:linear-gradient(180deg,#aeb8c9,#616d82);
+      box-shadow:0 3px 10px rgba(0,0,0,.35);
+      z-index:4;
     }
-    .arm{
-      position:absolute;right:17%;top:23%;width:38%;height:12px;
-      transform-origin:92% 50%;transform:rotate(30deg);transition:transform .35s ease;z-index:4
-    }
-    .arm.playing{transform:rotate(10deg)}
-    .arm .bar{position:absolute;inset:0 12% 0 0;border-radius:999px;background:linear-gradient(180deg,#dbe0e8,#7d8898);box-shadow:0 3px 12px rgba(0,0,0,.35)}
-    .arm .head{position:absolute;left:-2%;top:-5px;width:20%;height:22px;border-radius:5px;background:linear-gradient(180deg,#ffd36d,#8a6840);box-shadow:0 3px 10px rgba(0,0,0,.35)}
 
-    .now{display:flex;flex-direction:column;gap:14px}
-    .live{display:inline-flex;align-items:center;gap:10px;color:var(--green);font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:.08em}
-    .dot{width:10px;height:10px;border-radius:50%;background:var(--green);opacity:.35;box-shadow:0 0 14px var(--green);transition:opacity .2s ease}
+    .arm{
+      position:absolute;
+      right:17%;
+      top:23%;
+      width:38%;
+      height:12px;
+      transform-origin:92% 50%;
+      transform:rotate(30deg);
+      transition:transform .35s ease;
+      z-index:4;
+    }
+
+    .arm.playing{transform:rotate(10deg)}
+
+    .arm .bar{
+      position:absolute;
+      inset:0 12% 0 0;
+      border-radius:999px;
+      background:linear-gradient(180deg,#dbe0e8,#7d8898);
+      box-shadow:0 3px 12px rgba(0,0,0,.35);
+    }
+
+    .arm .head{
+      position:absolute;
+      left:-2%;
+      top:-5px;
+      width:20%;
+      height:22px;
+      border-radius:5px;
+      background:linear-gradient(180deg,#ffd36d,#8a6840);
+      box-shadow:0 3px 10px rgba(0,0,0,.35);
+    }
+
+    .now{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .live{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      color:var(--green);
+      font-size:13px;
+      font-weight:bold;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+
+    .dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:var(--green);
+      opacity:.35;
+      box-shadow:0 0 14px var(--green);
+      transition:opacity .2s ease;
+    }
+
     .dot.on{opacity:1}
-    .title{margin:0;font-size:clamp(30px,8vw,54px);line-height:1;font-weight:900;text-wrap:balance}
+
+    .title{
+      margin:0;
+      font-size:clamp(30px,8vw,54px);
+      line-height:1;
+      font-weight:900;
+      text-wrap:balance;
+    }
+
     .warning{
       display:none;
       color:var(--warn);
@@ -87,55 +336,268 @@
       border:1px solid rgba(255,211,109,.22);
       background:rgba(255,211,109,.08);
     }
-    .meta{display:flex;flex-wrap:wrap;gap:10px}
-    .pill{padding:10px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.05);color:var(--muted);font-size:14px}
 
-    .controls{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-    .btn{border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--text);border-radius:14px;padding:13px 14px;font-size:15px;cursor:pointer}
-    .btn.primary{border:none;background:linear-gradient(135deg, var(--gold), var(--rose));color:#171717;font-weight:bold}
+    .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+
+    .pill{
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+    }
+
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.07);
+      color:var(--text);
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:15px;
+      cursor:pointer;
+    }
+
+    .btn.primary{
+      border:none;
+      background:linear-gradient(135deg, var(--gold), var(--rose));
+      color:#171717;
+      font-weight:bold;
+    }
+
     .btn.wide{grid-column:1 / -1}
 
-    .progress{display:flex;flex-direction:column;gap:8px}
-    .time-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
-    input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:999px;background:rgba(255,255,255,.12);outline:none;cursor:pointer}
-    input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);border:2px solid #fff}
-    input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);border:2px solid #fff}
-    .vol{display:flex;align-items:center;gap:12px;width:100%}
-    .vol span{min-width:64px;color:var(--muted);font-size:14px}
+    .progress{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .time-row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      -webkit-appearance:none;
+      appearance:none;
+      width:100%;
+      height:8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+      outline:none;
+      cursor:pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:var(--gold);
+      border:2px solid #fff;
+    }
+
+    input[type="range"]::-moz-range-thumb{
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:var(--gold);
+      border:2px solid #fff;
+    }
+
+    .vol{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      width:100%;
+    }
+
+    .vol span{
+      min-width:64px;
+      color:var(--muted);
+      font-size:14px;
+    }
 
     .search-panel{padding:0 16px 0}
-    .search-panel input{width:100%;padding:15px 16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);outline:none;font-size:15px}
+
+    .search-panel input{
+      width:100%;
+      padding:15px 16px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+      font-size:15px;
+    }
 
     .grid-panel{padding:16px}
-    .grid-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}
-    .grid-head h2{margin:0;font-size:24px;font-weight:900}
-    .grid-head .sub{color:var(--muted);font-size:14px;margin-top:4px}
-    .grid{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:12px}
-    .card{position:relative;overflow:hidden;border-radius:18px;background:#161c2a;border:1px solid rgba(255,255,255,.08);cursor:pointer;min-height:210px;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease}
-    .card:hover{transform:translateY(-2px);box-shadow:0 14px 28px rgba(0,0,0,.22)}
-    .card.active{border-color:rgba(255,211,109,.34);box-shadow:0 0 0 1px rgba(255,211,109,.28), 0 14px 28px rgba(0,0,0,.24)}
-    .card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-    .card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(7,11,19,.04), rgba(7,11,19,.18) 40%, rgba(7,11,19,.90) 100%)}
-    .card-content{position:absolute;left:0;right:0;bottom:0;z-index:1;padding:14px;display:flex;flex-direction:column;gap:8px}
-    .card-title{font-size:16px;font-weight:900;line-height:1.05}
-    .card-meta{display:flex;flex-wrap:wrap;gap:8px;color:#e8ebf5;font-size:12px}
-    .tag{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.10)}
-    .tag.warn{background:rgba(255,211,109,.16);border-color:rgba(255,211,109,.28);color:#ffe8ad}
-    .play-chip{position:absolute;top:12px;right:12px;z-index:1;border-radius:999px;padding:8px 10px;font-size:12px;font-weight:bold;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.14);color:#fff}
-    .empty{color:var(--muted);padding:18px 4px 4px}
+
+    .grid-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:end;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .grid-head h2{
+      margin:0;
+      font-size:24px;
+      font-weight:900;
+    }
+
+    .grid-head .sub{
+      color:var(--muted);
+      font-size:14px;
+      margin-top:4px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:12px;
+    }
+
+    .card{
+      position:relative;
+      overflow:hidden;
+      border-radius:18px;
+      background:#161c2a;
+      border:1px solid rgba(255,255,255,.08);
+      cursor:pointer;
+      min-height:210px;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+
+    .card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 14px 28px rgba(0,0,0,.22);
+    }
+
+    .card.active{
+      border-color:rgba(255,211,109,.34);
+      box-shadow:0 0 0 1px rgba(255,211,109,.28), 0 14px 28px rgba(0,0,0,.24);
+    }
+
+    .card img{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .card::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(180deg, rgba(7,11,19,.04), rgba(7,11,19,.18) 40%, rgba(7,11,19,.90) 100%);
+    }
+
+    .card-content{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:1;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .card-title{
+      font-size:16px;
+      font-weight:900;
+      line-height:1.05;
+    }
+
+    .card-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      color:#e8ebf5;
+      font-size:12px;
+    }
+
+    .tag{
+      padding:6px 8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .tag.warn{
+      background:rgba(255,211,109,.16);
+      border-color:rgba(255,211,109,.28);
+      color:#ffe8ad;
+    }
+
+    .play-chip{
+      position:absolute;
+      top:12px;
+      right:12px;
+      z-index:1;
+      border-radius:999px;
+      padding:8px 10px;
+      font-size:12px;
+      font-weight:bold;
+      background:rgba(0,0,0,.42);
+      border:1px solid rgba(255,255,255,.14);
+      color:#fff;
+    }
+
+    .empty{
+      color:var(--muted);
+      padding:18px 4px 4px;
+    }
 
     @media (min-width:760px){
       .controls{grid-template-columns:repeat(3,1fr)}
       .btn.wide{grid-column:auto}
       .grid{grid-template-columns:repeat(3, minmax(0,1fr))}
     }
+
     @media (min-width:1100px){
-      .shell{width:min(1380px,96vw);margin:18px auto 28px;padding:0}
-      .topbar{padding:22px 22px 10px;flex-direction:row;justify-content:space-between;align-items:end}
+      .shell{
+        width:min(1380px,96vw);
+        margin:18px auto 28px;
+        padding:0;
+      }
+      .topbar{
+        padding:22px 22px 10px;
+        flex-direction:row;
+        justify-content:space-between;
+        align-items:end;
+      }
       .featured{padding:22px}
-      .player{grid-template-columns:400px 1fr;gap:22px;align-items:start}
+      .player{
+        grid-template-columns:400px 1fr;
+        gap:22px;
+        align-items:start;
+      }
       .grid-panel{padding:22px}
-      .grid{grid-template-columns:repeat(4, minmax(0,1fr));gap:14px}
+      .grid{
+        grid-template-columns:repeat(4, minmax(0,1fr));
+        gap:14px;
+      }
       .card{min-height:250px}
     }
   </style>
@@ -147,8 +609,9 @@
         <div class="brand">
           <small>Les créations de Titus</small>
           <h1>Jukebox Titus</h1>
-          <div class="sub">Version complète avec alerte cover manquante pour le fichier concerné</div>
+          <div class="sub">Version complète avec aide visuelle sur les covers manquantes</div>
         </div>
+
         <div class="badges">
           <div class="badge primary" id="statusBadge">Prêt à lire</div>
           <div class="badge" id="countBadge">0 titre</div>
@@ -163,11 +626,15 @@
             <div class="vinyl-wrap">
               <div class="vinyl-backdrop"></div>
               <div class="vinyl" id="vinyl">
-                <div class="label"><img id="labelCover" src="pochette.png" alt="Label"></div>
+                <div class="label">
+                  <img id="labelCover" src="pochette.png" alt="Label">
+                </div>
                 <div class="spindle"></div>
               </div>
             </div>
+
             <div class="arm-base"></div>
+
             <div class="arm" id="arm">
               <div class="bar"></div>
               <div class="head"></div>
@@ -176,8 +643,14 @@
 
           <div class="now">
             <div class="live"><span class="dot" id="liveDot"></span> Lecture en cours</div>
+
             <h2 class="title" id="songTitle">Chargement…</h2>
 
+            <!--
+              MESSAGE D'ALERTE COVER MANQUANTE
+              --------------------------------
+              Ce bloc s'affiche seulement si la cover du morceau n'est pas trouvée.
+            -->
             <div id="coverWarning" class="warning">⚠ cover manquante pour ce fichier</div>
 
             <div class="meta">
@@ -196,24 +669,33 @@
             </div>
 
             <div class="progress">
-              <div class="time-row"><span id="currentTime">0:00</span><span id="duration">0:00</span></div>
+              <div class="time-row">
+                <span id="currentTime">0:00</span>
+                <span id="duration">0:00</span>
+              </div>
               <input type="range" id="progressBar" min="0" max="100" value="0">
             </div>
 
-            <div class="vol"><span>Volume</span><input type="range" id="volumeBar" min="0" max="100" value="85"></div>
+            <div class="vol">
+              <span>Volume</span>
+              <input type="range" id="volumeBar" min="0" max="100" value="85">
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="search-panel"><input id="searchInput" type="text" placeholder="Rechercher un titre..."></div>
+      <div class="search-panel">
+        <input id="searchInput" type="text" placeholder="Rechercher un titre...">
+      </div>
 
       <div class="grid-panel">
         <div class="grid-head">
           <div>
             <h2>Bibliothèque</h2>
-            <div class="sub">Les cartes signalent aussi les covers manquantes</div>
+            <div class="sub">Les cartes problématiques affichent aussi un badge d’alerte</div>
           </div>
         </div>
+
         <div class="grid" id="grid"></div>
         <div class="empty" id="emptyState" style="display:none;">Aucun titre trouvé.</div>
       </div>
@@ -223,8 +705,21 @@
   <audio id="audio"></audio>
 
   <script>
+    /*
+      ==========================================================
+      1) RÉGLAGES GÉNÉRAUX
+      ==========================================================
+      FALLBACK_COVER = image utilisée si une cover manque.
+      Si un morceau n'a pas de cover valide, le site affiche cette image.
+    */
     const FALLBACK_COVER = "pochette.png";
 
+    /*
+      ==========================================================
+      2) RÉCUPÉRATION DES ÉLÉMENTS HTML
+      ==========================================================
+      Ici on récupère les blocs de la page pour les manipuler ensuite en JavaScript.
+    */
     const audio = document.getElementById('audio');
     const grid = document.getElementById('grid');
     const emptyState = document.getElementById('emptyState');
@@ -252,6 +747,23 @@
     const arm = document.getElementById('arm');
     const searchInput = document.getElementById('searchInput');
 
+    /*
+      ==========================================================
+      3) TABLE DE CORRESPONDANCE DES COVERS
+      ==========================================================
+      C'EST LE BLOC LE PLUS IMPORTANT POUR TOI.
+
+      FORMAT :
+      "nom-du-fichier-mp3.mp3": "covers/nom-exact-de-la-cover.jpg"
+
+      SI UNE COVER EST MAUVAISE :
+      - repère le nom du mp3
+      - repère le nom exact du fichier image dans GitHub
+      - corrige juste la ligne correspondante ici
+
+      EXEMPLE :
+      "mon-beau-coquillage.mp3": "covers/mon-beau-coquillage-cover.jpeg"
+    */
     const COVER_MAP = {
       "ayo-praslin.mp3": "covers/ayo-praslin-cover.jpg",
       "fallait-pas.mp3": "covers/fallait-pas-laisser nos-vies-cover.jpg",
@@ -266,6 +778,23 @@
       "on-peut-saimer-sans-etre-2.mp3": "covers/on-peut-saimer-sans-être-2-cover.jpeg"
     };
 
+    /*
+      ==========================================================
+      4) LISTE DES MORCEAUX
+      ==========================================================
+      C'EST LE DEUXIÈME BLOC IMPORTANT.
+
+      POUR AJOUTER UN MORCEAU :
+      - ajoute une ligne avec :
+        title = titre affiché
+        file  = nom exact du mp3
+      - puis ajoute sa cover dans COVER_MAP si tu en as une
+
+      SI TU N'AJOUTES PAS LA COVER :
+      - le morceau fonctionnera quand même
+      - mais il utilisera pochette.png
+      - et affichera une alerte
+    */
     let tracks = [
       { title: "Ayo Praslin", artist: "Titus", album: "Les créations de Titus", tag: "Créations", file: "ayo-praslin.mp3" },
       { title: "Fallait pas", artist: "Titus", album: "Les créations de Titus", tag: "Créations", file: "fallait-pas.mp3" },
@@ -290,10 +819,25 @@
       };
     });
 
+    /*
+      Copies de travail :
+      - tracks = toute la bibliothèque
+      - filteredTracks = ce qu'on affiche après recherche
+    */
     let filteredTracks = tracks.slice();
+
+    /*
+      États du lecteur
+    */
     let currentIndex = 0;
     let shuffleMode = false;
     let repeatMode = true;
+
+    /*
+      ==========================================================
+      5) FONCTIONS UTILES
+      ==========================================================
+    */
 
     function formatTime(seconds){
       if(!isFinite(seconds)) return '0:00';
@@ -302,6 +846,11 @@
       return mins + ':' + secs;
     }
 
+    /*
+      safeSetImage :
+      - essaie d'afficher la vraie cover
+      - si elle ne marche pas, remplace par pochette.png
+    */
     function safeSetImage(img, src, fallback){
       img.onerror = function(){
         img.onerror = null;
@@ -318,6 +867,13 @@
       arm.classList.toggle('playing', isPlaying);
     }
 
+    /*
+      applyTrack :
+      - met à jour le titre
+      - met à jour les infos
+      - affiche la cover
+      - affiche ou cache l'alerte cover manquante
+    */
     function applyTrack(track){
       songTitleEl.textContent = track.title;
       metaArtistEl.textContent = track.artist;
@@ -325,6 +881,7 @@
       metaTagEl.textContent = track.tag || 'Créations';
 
       const isFallback = !track.cover || track.cover === FALLBACK_COVER;
+
       safeSetImage(labelCoverEl, track.cover, track.fallback);
 
       if (isFallback) {
@@ -342,17 +899,27 @@
     function loadTrack(index, autoplay){
       currentIndex = index;
       const track = tracks[currentIndex];
+
       audio.src = track.file;
       currentTimeEl.textContent = '0:00';
       durationEl.textContent = '0:00';
       progressBar.value = 0;
+
       applyTrack(track);
       statusBadge.textContent = 'Titre chargé';
+
       if(autoplay){
-        audio.play().catch(function(){ statusBadge.textContent = 'Clique sur lecture'; });
+        audio.play().catch(function(){
+          statusBadge.textContent = 'Clique sur lecture';
+        });
       }
     }
 
+    /*
+      renderGrid :
+      - construit les cartes
+      - ajoute un badge si la cover est manquante
+    */
     function renderGrid(){
       grid.innerHTML = '';
       countBadge.textContent = tracks.length + ' titre' + (tracks.length > 1 ? 's' : '');
@@ -361,6 +928,7 @@
         emptyState.style.display = 'block';
         return;
       }
+
       emptyState.style.display = 'none';
 
       filteredTracks.forEach(function(track){
@@ -370,6 +938,7 @@
 
         const card = document.createElement('div');
         card.className = 'card' + (originalIndex === currentIndex ? ' active' : '');
+
         card.innerHTML =
           '<img alt="' + track.title + '">' +
           '<div class="play-chip">' + (originalIndex === currentIndex ? 'En cours' : 'Lecture') + '</div>' +
@@ -384,34 +953,49 @@
 
         const img = card.querySelector('img');
         safeSetImage(img, track.cover, track.fallback);
-        card.addEventListener('click', function(){ loadTrack(originalIndex, true); });
+
+        card.addEventListener('click', function(){
+          loadTrack(originalIndex, true);
+        });
+
         grid.appendChild(card);
       });
     }
 
     function togglePlay(){
       if(!audio.src) return;
+
       if(audio.paused){
-        audio.play().catch(function(){ statusBadge.textContent = 'Lecture bloquée par le navigateur'; });
+        audio.play().catch(function(){
+          statusBadge.textContent = 'Lecture bloquée par le navigateur';
+        });
       } else {
         audio.pause();
       }
     }
 
     function getFilteredCurrentIndex(){
-      return filteredTracks.findIndex(function(t){ return t.file === tracks[currentIndex].file; });
+      return filteredTracks.findIndex(function(t){
+        return t.file === tracks[currentIndex].file;
+      });
     }
 
     function playNext(){
       if(shuffleMode){
         let next = currentIndex;
+
         if(tracks.length > 1){
-          while(next === currentIndex){ next = Math.floor(Math.random() * tracks.length); }
+          while(next === currentIndex){
+            next = Math.floor(Math.random() * tracks.length);
+          }
         }
+
         loadTrack(next, true);
         return;
       }
+
       const idx = getFilteredCurrentIndex();
+
       if(idx >= 0 && idx < filteredTracks.length - 1){
         const nextTrack = filteredTracks[idx + 1];
         const originalIndex = tracks.findIndex(function(t){ return t.file === nextTrack.file; });
@@ -428,8 +1012,13 @@
     }
 
     function playPrev(){
-      if(audio.currentTime > 3){ audio.currentTime = 0; return; }
+      if(audio.currentTime > 3){
+        audio.currentTime = 0;
+        return;
+      }
+
       const idx = getFilteredCurrentIndex();
+
       if(idx > 0){
         const prevTrack = filteredTracks[idx - 1];
         const originalIndex = tracks.findIndex(function(t){ return t.file === prevTrack.file; });
@@ -441,6 +1030,11 @@
       }
     }
 
+    /*
+      ==========================================================
+      6) BOUTONS ET ÉVÉNEMENTS
+      ==========================================================
+    */
     playBtn.addEventListener('click', togglePlay);
     prevBtn.addEventListener('click', playPrev);
     nextBtn.addEventListener('click', playNext);
@@ -468,7 +1062,11 @@
     audio.addEventListener('play', function(){ setPlayingState(true); });
     audio.addEventListener('pause', function(){ setPlayingState(false); });
     audio.addEventListener('ended', playNext);
-    audio.addEventListener('loadedmetadata', function(){ durationEl.textContent = formatTime(audio.duration); });
+
+    audio.addEventListener('loadedmetadata', function(){
+      durationEl.textContent = formatTime(audio.duration);
+    });
+
     audio.addEventListener('timeupdate', function(){
       if(!audio.duration) return;
       progressBar.value = (audio.currentTime / audio.duration) * 100;
@@ -484,17 +1082,31 @@
       audio.volume = volumeBar.value / 100;
     });
 
+    /*
+      ==========================================================
+      7) RECHERCHE
+      ==========================================================
+      Filtre les morceaux affichés sans toucher à la liste complète.
+    */
     searchInput.addEventListener('input', function(e){
       const q = e.target.value.trim().toLowerCase();
+
       filteredTracks = tracks.filter(function(track){
         return track.title.toLowerCase().includes(q) ||
                track.artist.toLowerCase().includes(q) ||
                track.album.toLowerCase().includes(q) ||
                (track.tag || '').toLowerCase().includes(q);
       });
+
       renderGrid();
     });
 
+    /*
+      ==========================================================
+      8) DÉMARRAGE
+      ==========================================================
+      Charge le premier morceau et construit la grille.
+    */
     function init(){
       if(tracks.length === 0){
         songTitleEl.textContent = 'Aucun titre';
@@ -502,6 +1114,7 @@
         renderGrid();
         return;
       }
+
       audio.volume = 0.85;
       loadTrack(0, false);
       renderGrid();
@@ -511,3 +1124,4 @@
   </script>
 </body>
 </html>
+
